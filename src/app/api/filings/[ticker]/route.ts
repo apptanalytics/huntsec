@@ -4,9 +4,10 @@ import { getTickerToCikMap, getSubmissions } from "@/lib/sec";
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { ticker: string } }
+    context: { params: Promise<{ ticker: string }> } // Fix: Type as Promise
 ) {
-    const ticker = (await params).ticker.toUpperCase();
+    const params = await context.params;
+    const ticker = params.ticker.toUpperCase();
 
     if (!ticker) {
         return NextResponse.json({ error: "Ticker is required" }, { status: 400 });

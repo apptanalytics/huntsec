@@ -8,9 +8,10 @@ import { notFound } from "next/navigation";
 export default async function FilingsPage({
     params,
 }: {
-    params: { ticker: string };
+    params: Promise<{ ticker: string }>;
 }) {
-    const ticker = (await params).ticker.toUpperCase();
+    const { ticker: rawTicker } = await params;
+    const ticker = rawTicker.toUpperCase();
     const tickerMap = await getTickerToCikMap();
     const cik = tickerMap[ticker];
 
