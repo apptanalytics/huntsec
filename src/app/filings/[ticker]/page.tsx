@@ -1,6 +1,6 @@
 
 import { getTickerToCikMap, getSubmissions } from "@/lib/sec";
-import { getFormDescription, getFilingCategory } from "@/lib/form-types";
+import { getFormDescription, getFilingCategory, getItemDescription } from "@/lib/form-types";
 import { formatLargeNumber } from "@/lib/format";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -20,13 +20,31 @@ export default async function FilingsPage({
 
     const data = await getSubmissions(cik);
 
-    // Fetch shares outstanding in parallel (or sequentially, but safely)
+    // Fetch shares outstanding and public float (S-3 preferred, then XBRL)
     let sharesOutstanding = null;
+    let publicFloat = null;
+
     try {
-        const { getLatestSharesOutstanding } = await import("@/lib/sec");
-        sharesOutstanding = await getLatestSharesOutstanding(cik);
+        const { getLatestSharesOutstanding, getLatestPublicFloat, getLatestS3PublicFloat } = await import("@/lib/sec");
+
+        // Parallel data fetching
+        const [sharesResult, xbrlFloatResult, s3FloatResult] = await Promise.all([
+            getLatestSharesOutstanding(cik),
+            getLatestPublicFloat(cik),
+            getLatestS3PublicFloat(cik)
+        ]);
+
+        sharesOutstanding = sharesResult;
+
+        // Prefer S-3 data if available (usually newer), otherwise fallback to XBRL
+        if (s3FloatResult) {
+            publicFloat = { ...s3FloatResult, type: 'S-3' };
+        } else if (xbrlFloatResult) {
+            publicFloat = { ...xbrlFloatResult, type: 'XBRL' };
+        }
+
     } catch (e) {
-        console.error("Failed to fetch shares on page", e);
+        console.error("Failed to fetch financial data", e);
     }
 
     if (!data) {
@@ -66,6 +84,7 @@ export default async function FilingsPage({
 
     const categories: Record<string, any[]> = {
         "Annual & Quarterly Reports": [],
+        "Current Reports": [],
         "Registration Statements": [],
         "Proxy Materials": [],
         "Beneficial Ownership": [],
@@ -86,6 +105,7 @@ export default async function FilingsPage({
     // Define display order
     const displayOrder = [
         "Annual & Quarterly Reports",
+        "Current Reports",
         "Registration Statements",
         "Proxy Materials",
         "Beneficial Ownership",
@@ -116,6 +136,64 @@ export default async function FilingsPage({
                         <span>SIC: {data.sic}</span>
                         <span>{data.sicDescription}</span>
                     </div>
+
+                    {/* Dilution Analysis / Baby Shelf Rule */}
+                    {publicFloat && (
+                        <div style={{ marginTop: "1.5rem", padding: "1rem 1.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid var(--border-subtle)", display: "inline-flex", gap: "2rem", alignItems: "center" }}>
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                                <span style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Public Float</span>
+                                <span style={{ color: "var(--text-secondary)", fontSize: "1rem", fontWeight: "500" }}>
+                                    ${formatLargeNumber(publicFloat.value)}{" "}
+                                    <span style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", display: "block" }}>
+                                        ({publicFloat.date}) • {publicFloat.type === 'S-3' ? 'S-3 (Fresher)' : 'XBRL (Lagging)'}
+                                    </span>
+                                </span>
+                            </div>
+
+                            <div style={{ height: "30px", width: "1px", background: "var(--border-subtle)" }}></div>
+
+                            {publicFloat.value < 75_000_000 ? (
+                                <div style={{ display: "flex", flexDirection: "column" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                        <span style={{ fontSize: "0.75rem", color: "#F59E0B", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em", background: "rgba(245, 158, 11, 0.1)", padding: "2px 6px", borderRadius: "4px" }}>Baby Shelf Restriction</span>
+                                    </div>
+                                    <span style={{ color: "var(--text-primary)", fontSize: "0.9rem", marginTop: "0.25rem" }}>
+                                        Max 12mo Dilution: <span style={{ fontWeight: "600" }}>${formatLargeNumber(publicFloat.value / 3)}</span>
+                                    </span>
+                                </div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column" }}>
+                                    <span style={{ fontSize: "0.75rem", color: "#10B981", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em", background: "rgba(16, 185, 129, 0.1)", padding: "2px 6px", borderRadius: "4px" }}>Unrestricted S-3</span>
+                                    <span style={{ color: "var(--text-tertiary)", fontSize: "0.85rem", marginTop: "0.25rem" }}>Float {">"} $75M</span>
+                                </div>
+                            )}
+
+                            {/* Status & Shelf Size */}
+                            {'expirationDate' in publicFloat && (
+                                <>
+                                    <div style={{ height: "30px", width: "1px", background: "var(--border-subtle)" }}></div>
+                                    <div style={{ display: "flex", flexDirection: "column" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                            {new Date(publicFloat.expirationDate as string) > new Date() ? (
+                                                <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: "600" }}>
+                                                    ACTIVE <span style={{ fontWeight: "400", opacity: 0.7 }}>until {publicFloat.expirationDate}</span>
+                                                </span>
+                                            ) : (
+                                                <span style={{ fontSize: "0.75rem", color: "#EF4444", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em", background: "rgba(239, 68, 68, 0.1)", padding: "2px 6px", borderRadius: "4px" }}>
+                                                    EXPIRED {publicFloat.expirationDate}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {publicFloat.shelfSize && (
+                                            <span style={{ color: "var(--text-primary)", fontSize: "0.9rem", marginTop: "0.25rem" }}>
+                                                Total Capacity: <span style={{ fontWeight: "600" }}>${formatLargeNumber(publicFloat.shelfSize)}</span>
+                                            </span>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
                 </div>
             </header>
 
@@ -141,12 +219,26 @@ export default async function FilingsPage({
                                         style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", textDecoration: "none", color: "inherit", transition: "all 0.2s ease" }}
                                     >
                                         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
                                                 <span style={{ fontSize: "1.1rem", fontWeight: "600", color: "var(--text-primary)" }}>{filing.form}</span>
                                                 {getFormDescription(filing.form) && (
                                                     <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", background: "rgba(255,255,255,0.1)", padding: "2px 8px", borderRadius: "4px" }}>
                                                         {getFormDescription(filing.form)}
                                                     </span>
+                                                )}
+                                                {/* 8-K Item Tags */}
+                                                {(filing.form === "8-K" || filing.form === "8-K/A") && filing.items && (
+                                                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                                                        {Array.from(new Set(filing.items.split(','))).map((item: any) => {
+                                                            const desc = getItemDescription(item.trim());
+                                                            if (!desc) return null;
+                                                            return (
+                                                                <span key={item} style={{ fontSize: "0.75rem", color: "#60A5FA", background: "rgba(96, 165, 250, 0.1)", padding: "2px 6px", borderRadius: "4px", border: "1px solid rgba(96, 165, 250, 0.2)" }}>
+                                                                    {desc}
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 )}
                                             </div>
                                             <span style={{ fontSize: "0.875rem", color: "var(--text-tertiary)" }}>{filing.primaryDocDescription || filing.primaryDocument}</span>
