@@ -29,10 +29,24 @@ export async function GET(
         // We can also process the data here to include ONLY what we need (e.g. valid filings)
         // But for now, returning raw submissions is fine.
 
+        // Try to fetch company facts for shares outstanding
+        let sharesOutstanding = null;
+        try {
+            const { getLatestSharesOutstanding } = await import("@/lib/sec");
+            const sharesData = await getLatestSharesOutstanding(cik);
+            // For now, the API just returns the number for backward compatibility if needed, 
+            // or we could return the whole object. Let's return just the value to keep the API shape simple unless requested otherwise.
+            // Actually, let's keep it simple: API returns number.
+            sharesOutstanding = sharesData ? sharesData.value : null;
+        } catch (e) {
+            console.error("Failed to fetch shares outstanding", e);
+        }
+
         return NextResponse.json({
             ticker,
             cik,
             name: submissions.name,
+            sharesOutstanding,
             filings: submissions.filings
         });
 

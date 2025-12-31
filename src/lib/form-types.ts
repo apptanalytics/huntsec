@@ -20,7 +20,23 @@ export const FORM_TYPE_DESCRIPTIONS: Record<string, string> = {
     "CT ORDER": "Confidential Treatment Order"
 };
 
+export const FILING_CATEGORIES = {
+    "Annual & Quarterly Reports": ["10-K", "10-Q", "8-K", "10-K/A", "10-Q/A", "20-F", "6-K"],
+    "Insider Trading": ["3", "4", "5"],
+    "Registration Statements": ["S-1", "S-3", "S-8", "424B", "424B2", "424B3", "424B4", "424B5", "POS Is", "FWP"],
+    "Beneficial Ownership": ["SC 13G", "SC 13D", "13F-HR", "SC 13G/A", "SC 13D/A"],
+    "Proxy Materials": ["DEF 14A", "DEFA14A", "PRE 14A"],
+};
+
+export function getFilingCategory(formType: string): string {
+    for (const [category, types] of Object.entries(FILING_CATEGORIES)) {
+        if (types.some(t => formType.startsWith(t))) { // simple prefix check often helps with /A
+            return category;
+        }
+    }
+    return "Other";
+}
+
 export function getFormDescription(formType: string): string | null {
-    // Normalize logic if needed, or simple lookup
     return FORM_TYPE_DESCRIPTIONS[formType] || null;
 }

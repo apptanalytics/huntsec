@@ -54,3 +54,47 @@ export async function getSubmissions(cik: number) {
         return null;
     }
 }
+
+export async function getCompanyFacts(cik: number) {
+    const paddedCik = cik.toString().padStart(10, '0');
+    const url = `https://data.sec.gov/api/xbrl/companyfacts/CIK${paddedCik}.json`;
+
+    try {
+        const response = await fetch(url, {
+            headers: {
+                "User-Agent": SEC_USER_AGENT,
+            },
+            next: { revalidate: 3600 }, // Cache for 1 hour
+        });
+
+        if (!response.ok) {
+            // Not all companies have XBRL facts
+            if (response.status === 404) return null;
+            throw new Error(`Failed to fetch facts for CIK ${cik}: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching facts for ${cik}:`, error);
+        return null;
+    }
+}
+
+export async function getLatestSharesOutstanding(cik: number): Promise<{ value: number, date: string } | null> {
+    try {
+        const facts = await getCompanyFacts(cik);
+        if (facts) {
+            const dei = facts.facts?.["dei"];
+            const sharesData = dei?.["EntityCommonStockSharesOutstanding"] || dei?.["CommonStockSharesOutstanding"];
+            if (sharesData && sharesData.units && sharesData.units.shares) {
+                // Get the latest entry based on 'end' date
+                const entries = sharesData.units.shares;
+                const latest = entries.sort((a: any, b: any) => new Date(b.end).getTime() - new Date(a.end).getTime())[0];
+                return latest ? { value: latest.val, date: latest.end } : null;
+            }
+        }
+    } catch (e) {
+        console.error("Failed to extract shares outstanding", e);
+    }
+    return null;
+}
