@@ -118,7 +118,30 @@ export async function getLatestSharesOutstanding(cik: number): Promise<{ value: 
 
                     // Regex patterns
 
-                    // 1. "Number of ... shares outstanding ... was X and Y" (e.g. Class A and B)
+                    // 1. "Indicate ... shares outstanding of each of the issuer's classes" (Multi-class table/list)
+                    // e.g. SNAP: Class A ... 1.4B, Class B ... 22M, Class C ... 231M
+                    const eachClassRegex = /indicate\s+the\s+number\s+of\s+shares\s+outstanding\s+of\s+each\s+of\s+the\s+issuer's\s+classes/i;
+                    if (eachClassRegex.test(cleanText)) {
+                        const sharesRegex = /([0-9,]{4,})\s+shares\s+outstanding/gi;
+                        const matches = [...cleanText.matchAll(sharesRegex)];
+
+                        let total = 0;
+                        let count = 0;
+                        for (const m of matches) {
+                            const val = parseFloat(m[1].replace(/,/g, ''));
+                            if (!isNaN(val) && val > 0) {
+                                total += val;
+                                count++;
+                            }
+                        }
+
+                        // Heuristic: If we found multiple classes, or at least one large number in this context
+                        if (count > 0) {
+                            return { value: total, date: filingDate, source: '10-Q/K' };
+                        }
+                    }
+
+                    // 2. "Number of ... shares outstanding ... was X and Y" (e.g. Class A and B)
                     // Use non-greedy .*? to prevent matching across too much text
                     const combinedRegex = /number\s+of\s+.*?shares\s+outstanding\s+as\s+of\s+.*?was\s+([0-9,]+)\s+and\s+([0-9,]+)/i;
                     const combinedMatch = cleanText.match(combinedRegex);
@@ -127,14 +150,14 @@ export async function getLatestSharesOutstanding(cik: number): Promise<{ value: 
                         return { value: val, date: filingDate, source: '10-Q/K' };
                     }
 
-                    // 2. "registrant had X shares ... outstanding"
+                    // 3. "registrant had X shares ... outstanding"
                     const hadRegex = /registrant\s+had\s+([0-9,]+)\s+shares/i;
                     const hadMatch = cleanText.match(hadRegex);
                     if (hadMatch) {
                         return { value: parseFloat(hadMatch[1].replace(/,/g, '')), date: filingDate, source: '10-Q/K' };
                     }
 
-                    // 3. "X shares ... outstanding as of"
+                    // 4. "X shares ... outstanding as of"
                     const asOfRegex = /([0-9,]+)\s+shares\s+of\s+.*?outstanding\s+as\s+of/i;
                     const asOfMatch = cleanText.match(asOfRegex);
                     if (asOfMatch) {
