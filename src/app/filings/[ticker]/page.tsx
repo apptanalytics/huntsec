@@ -120,20 +120,20 @@ export default async function FilingsPage({
                     <Link href="/" style={{ color: "var(--text-secondary)", fontSize: "0.875rem", marginBottom: "0.5rem", display: "block" }}>
                         ← Back to Search
                     </Link>
-                    <h1 style={{ fontSize: "3rem", fontWeight: "800" }}>
+                    <h1 style={{ fontSize: "3rem", fontWeight: "800", color: "var(--terminal-green)" }}>
                         {data.name} <span style={{ color: "var(--text-secondary)", fontWeight: "400" }}>{ticker}</span>
                     </h1>
                     <div style={{ display: "flex", gap: "1.5rem", color: "var(--text-secondary)", marginTop: "0.75rem", alignItems: "center", fontSize: "1rem" }}>
-                        <span>CIK: {cik}</span>
+                        <span>CIK: <span style={{ color: "var(--terminal-purple)" }}>{cik}</span></span>
                         {sharesOutstanding && (
                             <span>
-                                Shares: {formatLargeNumber(sharesOutstanding.value)}{" "}
+                                Shares: <span style={{ color: "var(--terminal-blue)" }}>{formatLargeNumber(sharesOutstanding.value)}</span>{" "}
                                 <span style={{ fontSize: "0.85rem", color: "var(--text-tertiary)", marginLeft: "0.25rem" }}>
                                     ({sharesOutstanding.date})
                                 </span>
                             </span>
                         )}
-                        <span>SIC: {data.sic}</span>
+                        <span>SIC: <span style={{ color: "var(--terminal-yellow)" }}>{data.sic}</span></span>
                         <span>{data.sicDescription}</span>
                     </div>
 
@@ -141,10 +141,10 @@ export default async function FilingsPage({
                     {publicFloat && (
                         <div style={{ marginTop: "1.5rem", padding: "1rem 1.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid var(--border-subtle)", display: "inline-flex", gap: "2rem", alignItems: "center" }}>
                             <div style={{ display: "flex", flexDirection: "column" }}>
-                                <span style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Public Float</span>
+                                <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: "600" }}>Public Float</span>
                                 <span style={{ color: "var(--text-secondary)", fontSize: "1rem", fontWeight: "500" }}>
                                     ${formatLargeNumber(publicFloat.value)}{" "}
-                                    <span style={{ fontSize: "0.75rem", color: "var(--text-tertiary)", display: "block" }}>
+                                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", display: "block", marginTop: "4px" }}>
                                         ({publicFloat.date}) • {publicFloat.type === 'S-3' ? 'S-3 (Fresher)' : 'XBRL (Lagging)'}
                                     </span>
                                 </span>
@@ -164,7 +164,7 @@ export default async function FilingsPage({
                             ) : (
                                 <div style={{ display: "flex", flexDirection: "column" }}>
                                     <span style={{ fontSize: "0.75rem", color: "#10B981", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em", background: "rgba(16, 185, 129, 0.1)", padding: "2px 6px", borderRadius: "4px" }}>Unrestricted S-3</span>
-                                    <span style={{ color: "var(--text-tertiary)", fontSize: "0.85rem", marginTop: "0.25rem" }}>Float {">"} $75M</span>
+                                    <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginTop: "0.25rem" }}>Float {">"} $75M</span>
                                 </div>
                             )}
 
@@ -220,9 +220,9 @@ export default async function FilingsPage({
                                     >
                                         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                                             <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-                                                <span style={{ fontSize: "1.1rem", fontWeight: "600", color: "var(--text-primary)" }}>{filing.form}</span>
+                                                <span style={{ fontSize: "1.1rem", fontWeight: "600", color: "var(--terminal-purple)" }}>{filing.form}</span>
                                                 {getFormDescription(filing.form) && (
-                                                    <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", background: "rgba(255,255,255,0.1)", padding: "2px 8px", borderRadius: "4px" }}>
+                                                    <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", background: "rgba(255,255,255,0.05)", padding: "2px 8px", borderRadius: "4px" }}>
                                                         {getFormDescription(filing.form)}
                                                     </span>
                                                 )}
@@ -233,7 +233,7 @@ export default async function FilingsPage({
                                                             const desc = getItemDescription(item.trim());
                                                             if (!desc) return null;
                                                             return (
-                                                                <span key={item} style={{ fontSize: "0.75rem", color: "#60A5FA", background: "rgba(96, 165, 250, 0.1)", padding: "2px 6px", borderRadius: "4px", border: "1px solid rgba(96, 165, 250, 0.2)" }}>
+                                                                <span key={item} style={{ fontSize: "0.75rem", color: "var(--terminal-cyan)", background: "rgba(86, 182, 194, 0.1)", padding: "2px 6px", borderRadius: "4px", border: "1px solid rgba(86, 182, 194, 0.2)" }}>
                                                                     {desc}
                                                                 </span>
                                                             );
@@ -241,13 +241,13 @@ export default async function FilingsPage({
                                                     </div>
                                                 )}
                                             </div>
-                                            <span style={{ fontSize: "0.875rem", color: "var(--text-tertiary)" }}>{filing.primaryDocDescription || filing.primaryDocument}</span>
+                                            <span style={{ fontSize: "0.875rem", color: "var(--terminal-yellow)", marginTop: "4px", fontFamily: "monospace" }}>{filing.primaryDocDescription || filing.primaryDocument}</span>
                                         </div>
 
                                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
                                             <span style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>{filing.filingDate}</span>
                                             {filing.isInlineXBRL === 1 && (
-                                                <span style={{ fontSize: "0.75rem", background: "var(--accent-glow)", color: "var(--accent-primary)", padding: "2px 6px", borderRadius: "4px" }}>iXBRL</span>
+                                                <span style={{ fontSize: "0.75rem", background: "rgba(35, 209, 139, 0.1)", color: "var(--terminal-green)", padding: "2px 6px", borderRadius: "4px" }}>iXBRL</span>
                                             )}
                                         </div>
                                     </a>

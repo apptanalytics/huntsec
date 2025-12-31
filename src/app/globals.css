@@ -1,21 +1,41 @@
 :root {
-  /* Premium Dark Theme Tokens */
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #111111;
-  --bg-tertiary: #1a1a1a;
-  
-  --text-primary: #ededed;
-  --text-secondary: #a1a1a1;
-  --text-tertiary: #525252;
+  /* Terminal / Editor Theme Tokens */
+  --bg-primary: #0f111a;
+  /* Deep dark blue-black background */
+  --bg-secondary: #1a1c25;
+  --bg-tertiary: #242631;
 
-  --accent-primary: #0070f3; /* Tech blue, trustworthy */
-  --accent-hover: #0060df;
-  --accent-glow: rgba(0, 112, 243, 0.15);
+  --text-primary: #e0e6ed;
+  /* Off-white for main text */
+  --text-secondary: #7f8c98;
+  /* Muted cool grey */
+  --text-tertiary: #565b66;
+  /* Darker clean grey */
 
-  --border-subtle: #333333;
-  --border-strong: #444444;
+  /* Syntax Highlighting Colors */
+  --terminal-green: #23d18b;
+  /* User/Prompt */
+  --terminal-purple: #c678dd;
+  /* System/Mingw */
+  --terminal-yellow: #e5c07b;
+  /* Path/Warning */
+  --terminal-cyan: #56b6c2;
+  /* Branch/Info */
+  --terminal-red: #e06c75;
+  /* Error/Danger */
+  --terminal-blue: #61afef;
+  /* Links/Functions */
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --accent-primary: var(--terminal-green);
+  /* Primary brand color matches the prompt user color */
+  --accent-hover: #1bb575;
+  --accent-glow: rgba(35, 209, 139, 0.15);
+
+  --border-subtle: #2a2e3b;
+  --border-strong: #3b4050;
+
+  --font-sans: 'Inter', 'JetBrains Mono', 'Fira Code', monospace;
+  /* Tech/Terminal feel */
 }
 
 html,
