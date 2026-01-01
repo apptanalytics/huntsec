@@ -158,10 +158,12 @@ export async function getLatestSharesOutstanding(cik: number): Promise<{ value: 
                     }
 
                     // 4. "X shares ... outstanding as of"
-                    const asOfRegex = /([0-9,]+)\s+shares\s+of\s+.*?outstanding\s+as\s+of/i;
+                    // Allow for spaces in the number (caused by tag stripping e.g. "14,000, 000")
+                    // Must start with a digit to avoid matching punctuation like ", shares of"
+                    const asOfRegex = /([0-9][0-9,\s]*?)\s+shares\s+of\s+.*?outstanding\s+as\s+of/i;
                     const asOfMatch = cleanText.match(asOfRegex);
                     if (asOfMatch) {
-                        return { value: parseFloat(asOfMatch[1].replace(/,/g, '')), date: filingDate, source: '10-Q/K' };
+                        return { value: parseFloat(asOfMatch[1].replace(/[\s,]/g, '')), date: filingDate, source: '10-Q/K' };
                     }
 
                     // 4. "outstanding ... : ... X shares" (Standard 10-Q header style)
